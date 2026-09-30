@@ -2936,5 +2936,17 @@ class TestMetalAutotune(unittest.TestCase):
         self.assertNotEqual(base, kernel._signature_key((x, 1024)))
 
 
+class TestMetalCodegen(unittest.TestCase):
+    """Renders that need no Metal device."""
+
+    def test_rolled_reduction_has_no_cuda_barrier(self) -> None:
+        # The lane-loop wrapper Metal's rolled reductions share with the CuTe
+        # backend runs CuTe's cross-thread barrier pass only for CuTe: a
+        # ``cute.arch.sync_threads()`` is an undeclared identifier in MSL.
+        code = row_sum.bind((torch.randn(64, 4096),)).to_code()
+        self.assertIn("tg_sum", code)
+        self.assertNotIn("sync_threads", code)
+
+
 if __name__ == "__main__":
     unittest.main()
